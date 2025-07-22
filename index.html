@@ -109,14 +109,18 @@
   </label>
   <button onclick="aplicarFiltro()">Filtrar</button>
   <button id="exportar" onclick="exportarPDF()">📄 Exportar PDF</button>
-<button id="enviarEmail">📧 Enviar Resumo por E-mail</button>
+<!-- ... parte superior igual ... -->
+
+  <button onclick="aplicarFiltro()">Filtrar</button>
+  <button id="exportar" onclick="exportarPDF()">📄 Exportar PDF</button>
+  <button id="enviarWhatsapp">📲 Enviar pelo WhatsApp</button>
 
 </div>
 
 <div id="painel"></div>
 
 <script>
-const url = 'https://script.google.com/macros/s/AKfycbyinOuKMaZgUTb7xElhyMl3zGRRDFBoKwVoa7Wj8iS9QajHLtBnhj8dpG0nksy6zZ_f/exec'; // Substitua pela sua URL
+const url = 'https://script.google.com/macros/s/AKfycbyinOuKMaZgUTb7xElhyMl3zGRRDFBoKwVoa7Wj8iS9QajHLtBnhj8dpG0nksy6zZ_f/exec';
 
 const emojis = {
   "DINHEIRO": "💵",
@@ -244,42 +248,24 @@ function exportarPDF() {
   };
   html2pdf().from(painel).set(opt).save();
 }
-// 🔽 AQUI ESTÁ A NOVA FUNÇÃO DE ENVIO POR EMAIL
-document.getElementById("enviarEmail").addEventListener("click", async () => {
+
+// NOVA FUNÇÃO PARA WHATSAPP
+document.getElementById("enviarWhatsapp").addEventListener("click", () => {
   const dataInicio = document.getElementById("dataInicio").value;
   const dataFim = document.getElementById("dataFim").value;
-  const painel = document.getElementById("painel");
+  const boxes = document.querySelectorAll(".empresa-box");
+  if (!boxes.length) return alert("Nenhum resumo encontrado para enviar.");
 
-  if (!painel || painel.innerText.trim() === "") {
-    alert("Nenhum dado disponível para enviar.");
-    return;
-  }
+  let mensagem = `📊 *Resumo de Transações Financeiras — GRUPO DV* — ${dataInicio === dataFim ? dataInicio : `${dataInicio} a ${dataFim}`}\n\n`;
 
-  const payload = {
-    dataInicio,
-    dataFim,
-    resumo: painel.innerText.trim()
-  };
+  boxes.forEach(box => {
+    const titulo = box.querySelector("h2")?.innerText;
+    const itens = [...box.querySelectorAll("li")].map(li => li.innerText).join("\n");
+    mensagem += `*${titulo}*\n${itens}\n\n`;
+  });
 
-  try {
-    const resposta = await fetch("https://script.google.com/macros/s/SEU_DEPLOY_URL/exec", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(payload)
-    });
-
-    const json = await resposta.json();
-    if (json.sucesso) {
-      alert("📧 E-mail enviado com sucesso!");
-    } else {
-      alert("Erro ao enviar e-mail.");
-    }
-  } catch (erro) {
-    console.error("Erro ao enviar:", erro);
-    alert("Erro ao enviar o e-mail.");
-  }
+  const link = "https://wa.me/?text=" + encodeURIComponent(mensagem.trim());
+  window.open(link, "_blank");
 });
 </script>
 
