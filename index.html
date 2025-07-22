@@ -114,7 +114,7 @@
 <div id="painel"></div>
 
 <script>
-const url = 'https://script.google.com/macros/s/AKfycbxMXpJ1r8B-8VLs4jgT2JrPQjevzKBIZ7VRJTEs_NfSlDv8pTInOcnVMB0xEWoJ5VhS/exec';
+const url = 'https://script.google.com/macros/s/AKfycbxMXpJ1r8B-8VLs4jgT2JrPQjevzKBIZ7VRJTEs_NfSlDv8pTInOcnVMB0xEWoJ5VhS/exec'; // Substitua pela sua URL
 
 const emojis = {
   "DINHEIRO": "💵",
@@ -135,7 +135,6 @@ const emojis = {
 
 let dados = [];
 
-// ⬇️ Setar data de ontem no campo "dataInicio"
 window.onload = () => {
   const ontem = new Date();
   ontem.setDate(ontem.getDate() - 1);
@@ -150,6 +149,7 @@ async function carregarDados() {
 
     const empresas = [...new Set(dados.map(item => item.Empresa))].sort();
     const select = document.getElementById("empresaFiltro");
+    select.innerHTML = '<option value="">Todas</option>';
     empresas.forEach(emp => {
       const option = document.createElement("option");
       option.value = emp;
@@ -195,7 +195,6 @@ function aplicarFiltro() {
     html += `</ul>`;
     box.innerHTML = html;
 
-    // gráfico somente em desktop
     const canvasContainer = document.createElement("div");
     canvasContainer.className = "grafico-desktop";
     const canvas = document.createElement("canvas");
@@ -212,7 +211,7 @@ function aplicarFiltro() {
 }
 
 function desenharGrafico(canvas, dadosEmpresa) {
-  if (window.innerWidth < 768) return; // só no desktop
+  if (window.innerWidth < 768) return;
 
   new Chart(canvas.getContext("2d"), {
     type: 'pie',
@@ -243,8 +242,6 @@ function exportarPDF() {
   };
   html2pdf().from(painel).set(opt).save();
 }
-
-carregarDados();
 </script>
 
 </body>
