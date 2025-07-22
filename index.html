@@ -264,7 +264,8 @@ document.getElementById("enviarWhatsapp").addEventListener("click", () => {
     mensagem += `*${titulo}*\n${itens}\n\n`;
   });
 
-  const link = "https://wa.me/?text=" + encodeURIComponent(mensagem.trim());
+  const numero = "5577999761436"; // ✅ Substitua pelo número desejado
+  const link = `https://wa.me/${numero}?text=` + encodeURIComponent(mensagem.trim());
   window.open(link, "_blank");
 });
 </script>
