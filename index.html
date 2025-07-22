@@ -135,6 +135,14 @@ const emojis = {
 
 let dados = [];
 
+// ⬇️ Setar data de ontem no campo "dataInicio"
+window.onload = () => {
+  const ontem = new Date();
+  ontem.setDate(ontem.getDate() - 1);
+  document.getElementById("dataInicio").value = ontem.toISOString().split('T')[0];
+  carregarDados();
+};
+
 async function carregarDados() {
   try {
     const resposta = await fetch(url);
