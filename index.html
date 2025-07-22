@@ -17,7 +17,7 @@
       text-align: center;
       margin-bottom: 20px;
     }
-    .filtros input {
+    .filtros input, .filtros select {
       padding: 8px;
       font-size: 14px;
       margin: 0 5px;
@@ -50,6 +50,10 @@
 <div class="filtros">
   <label>Data Início: <input type="date" id="dataInicio"></label>
   <label>Data Fim: <input type="date" id="dataFim"></label>
+  <label>Empresas:
+    <select id="empresaFiltro" multiple size="4" style="min-width: 180px;"></select>
+  </label>
+  <br><br>
   <button onclick="aplicarFiltro()">Filtrar</button>
 </div>
 
@@ -79,6 +83,19 @@ async function carregarDados() {
   try {
     const resposta = await fetch(url);
     dados = await resposta.json();
+
+    // Carrega opções únicas de empresas no filtro
+    const empresas = [...new Set(dados.map(item => item.Empresa))].sort();
+    const select = document.getElementById("empresaFiltro");
+    select.innerHTML = "";
+
+    empresas.forEach(emp => {
+      const option = document.createElement("option");
+      option.value = emp;
+      option.textContent = emp;
+      select.appendChild(option);
+    });
+
     aplicarFiltro();
   } catch (e) {
     document.getElementById("painel").innerHTML = "Erro ao carregar dados.";
@@ -90,13 +107,14 @@ function aplicarFiltro() {
   const inicio = document.getElementById("dataInicio").value;
   const fim = document.getElementById("dataFim").value;
 
+  const empresasSelecionadas = Array.from(document.getElementById("empresaFiltro").selectedOptions).map(opt => opt.value);
   const painel = document.getElementById("painel");
   painel.innerHTML = "";
 
   const dadosFiltrados = dados.filter(item => {
-    if (!item.Data) return false;
-    const data = item.Data;
-    return (!inicio || data >= inicio) && (!fim || data <= fim);
+    const dentroData = (!inicio || item.Data >= inicio) && (!fim || item.Data <= fim);
+    const dentroEmpresa = (empresasSelecionadas.length === 0 || empresasSelecionadas.includes(item.Empresa));
+    return dentroData && dentroEmpresa;
   });
 
   const empresas = [...new Set(dadosFiltrados.map(item => item.Empresa))];
@@ -124,7 +142,7 @@ function aplicarFiltro() {
   });
 
   if (empresas.length === 0) {
-    painel.innerHTML = "<p style='text-align:center'>Nenhum dado encontrado para o período selecionado.</p>";
+    painel.innerHTML = "<p style='text-align:center'>Nenhum dado encontrado para os filtros selecionados.</p>";
   }
 }
 
