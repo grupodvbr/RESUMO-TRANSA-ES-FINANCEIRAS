@@ -109,6 +109,8 @@
   </label>
   <button onclick="aplicarFiltro()">Filtrar</button>
   <button id="exportar" onclick="exportarPDF()">📄 Exportar PDF</button>
+<button id="enviarEmail">📧 Enviar Resumo por E-mail</button>
+
 </div>
 
 <div id="painel"></div>
@@ -242,6 +244,43 @@ function exportarPDF() {
   };
   html2pdf().from(painel).set(opt).save();
 }
+// 🔽 AQUI ESTÁ A NOVA FUNÇÃO DE ENVIO POR EMAIL
+document.getElementById("enviarEmail").addEventListener("click", async () => {
+  const dataInicio = document.getElementById("dataInicio").value;
+  const dataFim = document.getElementById("dataFim").value;
+  const painel = document.getElementById("painel");
+
+  if (!painel || painel.innerText.trim() === "") {
+    alert("Nenhum dado disponível para enviar.");
+    return;
+  }
+
+  const payload = {
+    dataInicio,
+    dataFim,
+    resumo: painel.innerText.trim()
+  };
+
+  try {
+    const resposta = await fetch("https://script.google.com/macros/s/SEU_DEPLOY_URL/exec", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(payload)
+    });
+
+    const json = await resposta.json();
+    if (json.sucesso) {
+      alert("📧 E-mail enviado com sucesso!");
+    } else {
+      alert("Erro ao enviar e-mail.");
+    }
+  } catch (erro) {
+    console.error("Erro ao enviar:", erro);
+    alert("Erro ao enviar o e-mail.");
+  }
+});
 </script>
 
 </body>
