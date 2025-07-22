@@ -12,28 +12,33 @@
     }
     h1 {
       text-align: center;
-      margin-bottom: 10px;
     }
-    select {
-      display: block;
-      margin: 20px auto;
-      padding: 10px;
-      font-size: 16px;
+    .filtros {
+      text-align: center;
+      margin-bottom: 20px;
     }
-    #resumo {
-      max-width: 800px;
-      margin: 0 auto;
+    .filtros input {
+      padding: 8px;
+      font-size: 14px;
+      margin: 0 5px;
+    }
+    .empresa-box {
       background: #fff;
+      margin: 30px auto;
       padding: 20px;
       border-radius: 10px;
+      max-width: 800px;
       box-shadow: 0 0 8px rgba(0,0,0,0.1);
+    }
+    h2 {
+      text-align: center;
     }
     ul {
       padding-left: 20px;
     }
     canvas {
       display: block;
-      max-width: 800px;
+      max-width: 700px;
       margin: 20px auto;
     }
   </style>
@@ -42,72 +47,95 @@
 
 <h1>📊 Painel Financeiro — Grupo DV</h1>
 
-<select id="filtroEmpresa">
-  <option value="">Selecione uma empresa</option>
-</select>
+<div class="filtros">
+  <label>Data Início: <input type="date" id="dataInicio"></label>
+  <label>Data Fim: <input type="date" id="dataFim"></label>
+  <button onclick="aplicarFiltro()">Filtrar</button>
+</div>
 
-<div id="resumo"></div>
-<canvas id="grafico"></canvas>
+<div id="painel"></div>
 
 <script>
-const url = 'https://script.google.com/macros/s/AKfycbzP-4aAXDKhLVsw7-EYLQk9KcIFa0lejtmsa4xMzRQnMih9oq1wol0mVUlEcjrKVvsT/exec'; // 🔁 Cole aqui a URL do seu Google Apps Script Web App
+const url = 'https://script.google.com/macros/s/AKfycbzP-4aAXDKhLVsw7-EYLQk9KcIFa0lejtmsa4xMzRQnMih9oq1wol0mVUlEcjrKVvsT/exec';
+
+const emojis = {
+  "DINHEIRO": "💵",
+  "CRÉDITO": "💳",
+  "DÉBITO": "🏦",
+  "PIX": "💲",
+  "ONLINE": "💻",
+  "CREDIÁRIO": "📋",
+  "VOUCHER": "🎫",
+  "BONIFICAÇÃO": "🎁",
+  "CONSUMO INTERNO": "👔",
+  "BOLETO": "📃",
+  "MARKETING": "📣",
+  "OUTROS": "🗂"
+};
 
 let dados = [];
 
 async function carregarDados() {
   try {
     const resposta = await fetch(url);
-    const json = await resposta.json();
-    dados = json;
-
-    const empresas = [...new Set(dados.map(item => item.Empresa))];
-    const filtro = document.getElementById("filtroEmpresa");
-
-    empresas.forEach(emp => {
-      const opt = document.createElement("option");
-      opt.value = emp;
-      opt.textContent = emp;
-      filtro.appendChild(opt);
-    });
-
-    filtro.addEventListener("change", () => mostrarResumo(filtro.value));
+    dados = await resposta.json();
+    aplicarFiltro();
   } catch (e) {
-    document.getElementById("resumo").innerHTML = "Erro ao carregar dados.";
+    document.getElementById("painel").innerHTML = "Erro ao carregar dados.";
     console.error(e);
   }
 }
 
-function mostrarResumo(empresa) {
-  const resumo = document.getElementById("resumo");
-  const dadosEmpresa = dados.filter(item => item.Empresa === empresa);
+function aplicarFiltro() {
+  const inicio = document.getElementById("dataInicio").value;
+  const fim = document.getElementById("dataFim").value;
 
-  if (dadosEmpresa.length === 0) {
-    resumo.innerHTML = "<p>Nenhum dado disponível para essa empresa.</p>";
-    return;
-  }
+  const painel = document.getElementById("painel");
+  painel.innerHTML = "";
 
-  let total = dadosEmpresa.reduce((s, i) => s + parseFloat(i.Valor), 0);
-  let html = `<h2>${empresa}</h2><ul>`;
-  dadosEmpresa.forEach(item => {
-    html += `<li>${item.Categoria}: R$ ${parseFloat(item.Valor).toLocaleString('pt-BR', {minimumFractionDigits: 2})}</li>`;
+  const dadosFiltrados = dados.filter(item => {
+    if (!item.Data) return false;
+    const data = item.Data;
+    return (!inicio || data >= inicio) && (!fim || data <= fim);
   });
-  html += `</ul><strong>Total: R$ ${total.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</strong>`;
-  resumo.innerHTML = html;
 
-  desenharGrafico(dadosEmpresa);
+  const empresas = [...new Set(dadosFiltrados.map(item => item.Empresa))];
+
+  empresas.forEach(emp => {
+    const dadosEmpresa = dadosFiltrados.filter(i => i.Empresa === emp);
+    const total = dadosEmpresa.reduce((s, i) => s + parseFloat(i.Valor), 0);
+
+    let box = document.createElement("div");
+    box.className = "empresa-box";
+
+    let html = `<h2>${emp}</h2><ul>`;
+    dadosEmpresa.forEach(item => {
+      const emoji = emojis[item.Categoria.toUpperCase()] || "📌";
+      html += `<li>${emoji} ${item.Categoria}: R$ ${parseFloat(item.Valor).toLocaleString('pt-BR', {minimumFractionDigits: 2})}</li>`;
+    });
+    html += `</ul><strong>Total: R$ ${total.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</strong>`;
+    box.innerHTML = html;
+
+    const canvas = document.createElement("canvas");
+    box.appendChild(canvas);
+    painel.appendChild(box);
+
+    desenharGrafico(canvas, dadosEmpresa);
+  });
+
+  if (empresas.length === 0) {
+    painel.innerHTML = "<p style='text-align:center'>Nenhum dado encontrado para o período selecionado.</p>";
+  }
 }
 
-function desenharGrafico(dadosEmpresa) {
-  const ctx = document.getElementById("grafico").getContext("2d");
-  if (window.grafico) window.grafico.destroy();
-
-  window.grafico = new Chart(ctx, {
+function desenharGrafico(canvas, dadosEmpresa) {
+  new Chart(canvas.getContext("2d"), {
     type: 'pie',
     data: {
-      labels: dadosEmpresa.map(e => e.Categoria),
+      labels: dadosEmpresa.map(e => `${emojis[e.Categoria.toUpperCase()] || "📌"} ${e.Categoria}`),
       datasets: [{
         data: dadosEmpresa.map(e => parseFloat(e.Valor)),
-        backgroundColor: dadosEmpresa.map((_, i) => `hsl(${i * 25}, 70%, 60%)`)
+        backgroundColor: dadosEmpresa.map((_, i) => `hsl(${i * 30}, 70%, 60%)`)
       }]
     },
     options: {
