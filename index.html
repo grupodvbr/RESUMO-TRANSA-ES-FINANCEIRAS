@@ -1,66 +1,120 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <title>Painel Financeiro - Grupo DV</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Resumo Financeiro - Grupo DV</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
-      background: #f5f5f5;
-      padding: 20px;
+      background: #e8f5e9;
+      margin: 0;
+      padding: 15px;
     }
     h1 {
       text-align: center;
+      margin-bottom: 20px;
+      font-size: 1.4em;
     }
     .filtros {
-      text-align: center;
-      margin-bottom: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-width: 500px;
+      margin: 0 auto 20px;
     }
-    .filtros input, .filtros select {
-      padding: 8px;
-      font-size: 14px;
-      margin: 0 5px;
+    .filtros label {
+      font-size: 0.9em;
+      display: flex;
+      flex-direction: column;
+    }
+    .filtros input,
+    .filtros select,
+    .filtros button {
+      padding: 10px;
+      font-size: 1em;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+    button {
+      background-color: #007bff;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #0056b3;
     }
     .empresa-box {
-      background: #fff;
-      margin: 30px auto;
-      padding: 20px;
+      background: #d0f0d5;
       border-radius: 10px;
-      max-width: 800px;
-      box-shadow: 0 0 8px rgba(0,0,0,0.1);
+      padding: 15px;
+      margin-bottom: 15px;
+      box-shadow: 0 0 4px rgba(0, 0, 0, 0.1);
     }
-    h2 {
-      text-align: center;
+    .empresa-box h2 {
+      margin: 0 0 10px;
+      font-size: 1.1em;
     }
-    ul {
-      padding-left: 20px;
+    .empresa-box ul {
+      list-style: none;
+      padding-left: 0;
+      margin: 0;
+      font-size: 0.95em;
     }
-    canvas {
+    .empresa-box li {
+      margin-bottom: 4px;
+    }
+    .grafico-desktop {
+      display: none;
+    }
+    #exportar {
+      margin: 0 auto 20px;
       display: block;
-      max-width: 700px;
-      margin: 20px auto;
+      max-width: 500px;
+    }
+
+    @media (min-width: 768px) {
+      .grafico-desktop {
+        display: block;
+        margin-top: 15px;
+      }
+      canvas {
+        max-width: 100%;
+        margin: 0 auto;
+      }
     }
   </style>
 </head>
 <body>
 
-<h1>📊 Painel Financeiro — Grupo DV</h1>
+<h1>📊 Resumo Financeiro — Grupo DV</h1>
 
 <div class="filtros">
-  <label>Data Início: <input type="date" id="dataInicio"></label>
-  <label>Data Fim: <input type="date" id="dataFim"></label>
-  <label>Empresas:
-    <select id="empresaFiltro" multiple size="4" style="min-width: 180px;"></select>
+  <label>
+    Data Início:
+    <input type="date" id="dataInicio" />
   </label>
-  <br><br>
+  <label>
+    Data Fim:
+    <input type="date" id="dataFim" />
+  </label>
+  <label>
+    Empresa:
+    <select id="empresaFiltro">
+      <option value="">Todas</option>
+    </select>
+  </label>
   <button onclick="aplicarFiltro()">Filtrar</button>
+  <button id="exportar" onclick="exportarPDF()">📄 Exportar PDF</button>
 </div>
 
 <div id="painel"></div>
 
 <script>
-const url = 'https://script.google.com/macros/s/AKfycbwj5B1hTFb6ocyioxQUtZZkOlWublI7kMILHYiyqShMH2OQf8DpfRPzsZVDpgQ5T9bM/exec';
+const url = 'https://script.google.com/macros/s/AKfycby6vC319wyGAp18EpXVJ4FnyTWaR561jksR_x6tjd_OwR3N0tAH_cKfA_KWjzTudFDV/exec';
 
 const emojis = {
   "DINHEIRO": "💵",
@@ -74,6 +128,8 @@ const emojis = {
   "CONSUMO INTERNO": "👔",
   "BOLETO": "📃",
   "MARKETING": "📣",
+  "IFOOD": "🍱",
+  "DELIVERY MUCH": "🍔",
   "OUTROS": "🗂"
 };
 
@@ -84,11 +140,8 @@ async function carregarDados() {
     const resposta = await fetch(url);
     dados = await resposta.json();
 
-    // Carrega opções únicas de empresas no filtro
     const empresas = [...new Set(dados.map(item => item.Empresa))].sort();
     const select = document.getElementById("empresaFiltro");
-    select.innerHTML = "";
-
     empresas.forEach(emp => {
       const option = document.createElement("option");
       option.value = emp;
@@ -106,15 +159,15 @@ async function carregarDados() {
 function aplicarFiltro() {
   const inicio = document.getElementById("dataInicio").value;
   const fim = document.getElementById("dataFim").value;
+  const empresaSelecionada = document.getElementById("empresaFiltro").value;
 
-  const empresasSelecionadas = Array.from(document.getElementById("empresaFiltro").selectedOptions).map(opt => opt.value);
   const painel = document.getElementById("painel");
   painel.innerHTML = "";
 
   const dadosFiltrados = dados.filter(item => {
-    const dentroData = (!inicio || item.Data >= inicio) && (!fim || item.Data <= fim);
-    const dentroEmpresa = (empresasSelecionadas.length === 0 || empresasSelecionadas.includes(item.Empresa));
-    return dentroData && dentroEmpresa;
+    const dataOk = (!inicio || item.Data >= inicio) && (!fim || item.Data <= fim);
+    const empresaOk = !empresaSelecionada || item.Empresa === empresaSelecionada;
+    return dataOk && empresaOk;
   });
 
   const empresas = [...new Set(dadosFiltrados.map(item => item.Empresa))];
@@ -123,19 +176,23 @@ function aplicarFiltro() {
     const dadosEmpresa = dadosFiltrados.filter(i => i.Empresa === emp);
     const total = dadosEmpresa.reduce((s, i) => s + parseFloat(i.Valor), 0);
 
-    let box = document.createElement("div");
+    const box = document.createElement("div");
     box.className = "empresa-box";
 
-    let html = `<h2>${emp}</h2><ul>`;
+    let html = `<h2>${emp.toUpperCase()} — R$ ${total.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</h2><ul>`;
     dadosEmpresa.forEach(item => {
       const emoji = emojis[item.Categoria.toUpperCase()] || "📌";
       html += `<li>${emoji} ${item.Categoria}: R$ ${parseFloat(item.Valor).toLocaleString('pt-BR', {minimumFractionDigits: 2})}</li>`;
     });
-    html += `</ul><strong>Total: R$ ${total.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</strong>`;
+    html += `</ul>`;
     box.innerHTML = html;
 
+    // gráfico somente em desktop
+    const canvasContainer = document.createElement("div");
+    canvasContainer.className = "grafico-desktop";
     const canvas = document.createElement("canvas");
-    box.appendChild(canvas);
+    canvasContainer.appendChild(canvas);
+    box.appendChild(canvasContainer);
     painel.appendChild(box);
 
     desenharGrafico(canvas, dadosEmpresa);
@@ -147,6 +204,8 @@ function aplicarFiltro() {
 }
 
 function desenharGrafico(canvas, dadosEmpresa) {
+  if (window.innerWidth < 768) return; // só no desktop
+
   new Chart(canvas.getContext("2d"), {
     type: 'pie',
     data: {
@@ -163,6 +222,18 @@ function desenharGrafico(canvas, dadosEmpresa) {
       }
     }
   });
+}
+
+function exportarPDF() {
+  const painel = document.getElementById("painel");
+  const opt = {
+    margin:       0.3,
+    filename:     'relatorio-financeiro.pdf',
+    image:        { type: 'jpeg', quality: 0.98 },
+    html2canvas:  { scale: 2 },
+    jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
+  };
+  html2pdf().from(painel).set(opt).save();
 }
 
 carregarDados();
