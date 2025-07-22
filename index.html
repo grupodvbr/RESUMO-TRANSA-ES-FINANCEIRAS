@@ -252,7 +252,17 @@ document.getElementById("enviarWhatsapp").addEventListener("click", () => {
   const boxes = document.querySelectorAll(".empresa-box");
   if (!boxes.length) return alert("Nenhum resumo encontrado para enviar.");
 
-  let mensagem = `📊 *Resumo de Transações Financeiras — GRUPO DV* — ${dataInicio === dataFim ? dataInicio : `${dataInicio} a ${dataFim}`}\n\n`;
+  function formatarDataBR(iso) {
+    if (!iso) return "";
+    const [y, m, d] = iso.split("-");
+    return `${d}/${m}/${y}`;
+  }
+
+  const dataBR = (dataInicio === dataFim)
+    ? formatarDataBR(dataInicio)
+    : `${formatarDataBR(dataInicio)} a ${formatarDataBR(dataFim)}`;
+
+  let mensagem = `📈 *Fechamento Diário - Financeiro* — ${dataBR}\n\n`;
 
   boxes.forEach(box => {
     const titulo = box.querySelector("h2")?.innerText;
@@ -260,7 +270,7 @@ document.getElementById("enviarWhatsapp").addEventListener("click", () => {
     mensagem += `*${titulo}*\n${itens}\n\n`;
   });
 
-  const numero = "5577999761436"; // ✅ Substitua pelo número desejado
+  const numero = "5577999761436"; // Altere para o número desejado
   const link = `https://wa.me/${numero}?text=` + encodeURIComponent(mensagem.trim());
   window.open(link, "_blank");
 });
