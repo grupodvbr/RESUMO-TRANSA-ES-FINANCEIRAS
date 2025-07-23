@@ -123,12 +123,8 @@ let dados = [];
 window.onload = () => {
   const ontem = new Date();
   ontem.setDate(ontem.getDate() - 1);
-  const data = ontem.toISOString().split('T')[0];
-  document.getElementById("dataInicio").value = data;
-  document.getElementById("dataFim").value = data;
+  document.getElementById("dataInicio").value = ontem.toISOString().split('T')[0];
   carregarDados();
-
-  document.getElementById("empresaFiltro").addEventListener("change", aplicarFiltro);
 };
 
 async function carregarDados() {
