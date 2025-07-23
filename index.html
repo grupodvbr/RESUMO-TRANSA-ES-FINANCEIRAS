@@ -75,7 +75,6 @@
       display: block;
       max-width: 500px;
     }
-
     @media (min-width: 768px) {
       .grafico-desktop {
         display: block;
@@ -110,37 +109,26 @@
   <button onclick="aplicarFiltro()">Filtrar</button>
   <button id="exportar" onclick="exportarPDF()">📄 Exportar PDF</button>
   <button id="enviarWhatsapp">📲 Enviar pelo WhatsApp</button>
-
 </div>
 
 <div id="painel"></div>
+<div id="graficoEvolucao" style="max-width: 900px; margin: 20px auto;"><canvas id="graficoLinha"></canvas></div>
 
 <script>
-const url = 'https://script.google.com/macros/s/AKfycbyinOuKMaZgUTb7xElhyMl3zGRRDFBoKwVoa7Wj8iS9QajHLtBnhj8dpG0nksy6zZ_f/exec';
-
+const url = 'https://script.google.com/macros/s/SEU_ID_DO_SCRIPT/exec';
 const emojis = {
-  "DINHEIRO": "💵",
-  "CRÉDITO": "💳",
-  "DÉBITO": "🏦",
-  "PIX": "💲",
-  "ONLINE": "💻",
-  "CREDIÁRIO": "📋",
-  "VOUCHER": "🎫",
-  "BONIFICAÇÃO": "🎁",
-  "CONSUMO INTERNO": "👔",
-  "BOLETO": "📃",
-  "MARKETING": "📣",
-  "IFOOD": "🍱",
-  "DELIVERY MUCH": "🍔",
-  "OUTROS": "🗂"
+  "DINHEIRO": "💵", "CRÉDITO": "💳", "DÉBITO": "🏦", "PIX": "🔴",
+  "ONLINE": "💻", "CREDIÁRIO": "📋", "VOUCHER": "🎫", "BONIFICAÇÃO": "🏱",
+  "CONSUMO INTERNO": "👔", "BOLETO": "📃", "MARKETING": "📣",
+  "IFOOD": "🍱", "DELIVERY MUCH": "🍔", "OUTROS": "🗂"
 };
-
 let dados = [];
 
 window.onload = () => {
   const ontem = new Date();
   ontem.setDate(ontem.getDate() - 1);
   document.getElementById("dataInicio").value = ontem.toISOString().split('T')[0];
+  document.getElementById("dataFim").value = ontem.toISOString().split('T')[0];
   carregarDados();
 };
 
@@ -165,115 +153,6 @@ async function carregarDados() {
     console.error(e);
   }
 }
-
-function aplicarFiltro() {
-  const inicio = document.getElementById("dataInicio").value;
-  const fim = document.getElementById("dataFim").value;
-  const empresaSelecionada = document.getElementById("empresaFiltro").value;
-
-  const painel = document.getElementById("painel");
-  painel.innerHTML = "";
-
-  const dadosFiltrados = dados.filter(item => {
-    const dataOk = (!inicio || item.Data >= inicio) && (!fim || item.Data <= fim);
-    const empresaOk = !empresaSelecionada || item.Empresa === empresaSelecionada;
-    return dataOk && empresaOk;
-  });
-
-  const empresas = [...new Set(dadosFiltrados.map(item => item.Empresa))];
-
-  empresas.forEach(emp => {
-    const dadosEmpresa = dadosFiltrados.filter(i => i.Empresa === emp);
-    const total = dadosEmpresa.reduce((s, i) => s + parseFloat(i.Valor), 0);
-
-    const box = document.createElement("div");
-    box.className = "empresa-box";
-
-    let html = `<h2>${emp.toUpperCase()} — R$ ${total.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</h2><ul>`;
-    dadosEmpresa.forEach(item => {
-      const emoji = emojis[item.Categoria.toUpperCase()] || "📌";
-      html += `<li>${emoji} ${item.Categoria}: R$ ${parseFloat(item.Valor).toLocaleString('pt-BR', {minimumFractionDigits: 2})}</li>`;
-    });
-    html += `</ul>`;
-    box.innerHTML = html;
-
-    const canvasContainer = document.createElement("div");
-    canvasContainer.className = "grafico-desktop";
-    const canvas = document.createElement("canvas");
-    canvasContainer.appendChild(canvas);
-    box.appendChild(canvasContainer);
-    painel.appendChild(box);
-
-    desenharGrafico(canvas, dadosEmpresa);
-  });
-
-  if (empresas.length === 0) {
-    painel.innerHTML = "<p style='text-align:center'>Nenhum dado encontrado para os filtros selecionados.</p>";
-  }
-}
-
-function desenharGrafico(canvas, dadosEmpresa) {
-  if (window.innerWidth < 768) return;
-
-  new Chart(canvas.getContext("2d"), {
-    type: 'pie',
-    data: {
-      labels: dadosEmpresa.map(e => `${emojis[e.Categoria.toUpperCase()] || "📌"} ${e.Categoria}`),
-      datasets: [{
-        data: dadosEmpresa.map(e => parseFloat(e.Valor)),
-        backgroundColor: dadosEmpresa.map((_, i) => `hsl(${i * 30}, 70%, 60%)`)
-      }]
-    },
-    options: {
-      plugins: {
-        title: { display: true, text: "Distribuição por Categoria" },
-        legend: { position: "bottom" }
-      }
-    }
-  });
-}
-
-function exportarPDF() {
-  const painel = document.getElementById("painel");
-  const opt = {
-    margin:       0.3,
-    filename:     'relatorio-financeiro.pdf',
-    image:        { type: 'jpeg', quality: 0.98 },
-    html2canvas:  { scale: 2 },
-    jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
-  };
-  html2pdf().from(painel).set(opt).save();
-}
-
-// NOVA FUNÇÃO PARA WHATSAPP
-document.getElementById("enviarWhatsapp").addEventListener("click", () => {
-  const dataInicio = document.getElementById("dataInicio").value;
-  const dataFim = document.getElementById("dataFim").value;
-  const boxes = document.querySelectorAll(".empresa-box");
-  if (!boxes.length) return alert("Nenhum resumo encontrado para enviar.");
-
-  function formatarDataBR(iso) {
-    if (!iso) return "";
-    const [y, m, d] = iso.split("-");
-    return `${d}/${m}/${y}`;
-  }
-
-  const dataBR = (dataInicio === dataFim)
-    ? formatarDataBR(dataInicio)
-    : `${formatarDataBR(dataInicio)} a ${formatarDataBR(dataFim)}`;
-
-  let mensagem = `📈 *Fechamento Diário - Financeiro* — ${dataBR}\n\n`;
-
-  boxes.forEach(box => {
-    const titulo = box.querySelector("h2")?.innerText;
-    const itens = [...box.querySelectorAll("li")].map(li => li.innerText).join("\n");
-    mensagem += `*${titulo}*\n${itens}\n\n`;
-  });
-
-  const numero = "5577999761436"; // Altere para o número desejado
-  const link = `https://wa.me/${numero}?text=` + encodeURIComponent(mensagem.trim());
-  window.open(link, "_blank");
-});
 </script>
 
 </body>
