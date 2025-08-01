@@ -11,12 +11,26 @@
       font-family: Arial, sans-serif;
       background: #e8f5e9;
       margin: 0;
-      padding: 15px;
+      padding: 0;
     }
-    h1 {
-      text-align: center;
-      margin-bottom: 20px;
-      font-size: 1.4em;
+    header {
+      background-color: white;
+      padding: 10px 20px;
+      display: flex;
+      align-items: center;
+      border-bottom: 1px solid #ccc;
+    }
+    header img {
+      height: 50px;
+      margin-right: 20px;
+    }
+    header h1 {
+      margin: 0;
+      font-size: 1.6em;
+      font-weight: bold;
+    }
+    .conteudo {
+      padding: 15px;
     }
     .filtros {
       display: flex;
@@ -75,7 +89,6 @@
       display: block;
       max-width: 500px;
     }
-
     @media (min-width: 768px) {
       .grafico-desktop {
         display: block;
@@ -90,30 +103,34 @@
 </head>
 <body>
 
-<h1>📊 Resumo Financeiro — Grupo DV</h1>
+<header>
+  <img src="https://static.wixstatic.com/media/d830b0_8cec50a98bbf4775814dbfa5386585e8~mv2.png" alt="Logo CB Systems">
+  <h1>Resumo Financeiro — Grupo DV</h1>
+</header>
 
-<div class="filtros">
-  <label>
-    Data Início:
-    <input type="date" id="dataInicio" />
-  </label>
-  <label>
-    Data Fim:
-    <input type="date" id="dataFim" />
-  </label>
-  <label>
-    Empresa:
-    <select id="empresaFiltro">
-      <option value="">Todas</option>
-    </select>
-  </label>
-  <button onclick="aplicarFiltro()">Filtrar</button>
-  <button id="exportar" onclick="exportarPDF()">📄 Exportar PDF</button>
-  <button id="enviarWhatsapp">📲 Enviar pelo WhatsApp</button>
+<div class="conteudo">
+  <div class="filtros">
+    <label>
+      Data Início:
+      <input type="date" id="dataInicio" />
+    </label>
+    <label>
+      Data Fim:
+      <input type="date" id="dataFim" />
+    </label>
+    <label>
+      Empresa:
+      <select id="empresaFiltro">
+        <option value="">Todas</option>
+      </select>
+    </label>
+    <button onclick="aplicarFiltro()">Filtrar</button>
+    <button id="exportar" onclick="exportarPDF()">📄 Exportar PDF</button>
+    <button id="enviarWhatsapp">📲 Enviar pelo WhatsApp</button>
+  </div>
 
+  <div id="painel"></div>
 </div>
-
-<div id="painel"></div>
 
 <script>
 const url = 'https://script.google.com/macros/s/AKfycbz9GQLrIB4oiX0jBQ7yaDO_IiMz3ER7lQT094sp5y2VUGgQWBaz3G1fa7s4ZbiWli_O/exec';
@@ -279,6 +296,7 @@ document.getElementById("enviarWhatsapp").addEventListener("click", () => {
   window.open(link, "_blank");
 });
 </script>
+
 
 </body>
 </html>
